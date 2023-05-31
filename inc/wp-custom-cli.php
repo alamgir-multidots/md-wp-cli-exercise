@@ -139,12 +139,12 @@ class Wp_Custom_Cli extends Exercise {
 			return;
 		}
 
+		$set_tags = $tag;
+
 		// Check set overwrite or not, if overwrite true then only new tag will be assign
 		if ( ! $overwrite ) {
 			$set_tags   = wp_get_post_terms( $post_id, 'post_tag' , [ 'fields' => 'names' ] );
 			$set_tags[] = $tag;
-		} else {
-			$set_tags = $tag;
 		}
 
 		// Set tag to Post
