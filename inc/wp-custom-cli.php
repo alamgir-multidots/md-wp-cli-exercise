@@ -98,7 +98,7 @@ class Wp_Custom_Cli extends Exercise {
 		// Set category to Post
 		$assign_category = term_exists( $category, 'category' );
 
-		if ( is_array( $assign_category ) && in_category( $assign_category['term_id'], $post_id ) ) {
+		if ( ! $overwrite && is_array( $assign_category ) && in_category( $assign_category['term_id'], $post_id ) ) {
 			return;
 		}
 					
@@ -135,7 +135,7 @@ class Wp_Custom_Cli extends Exercise {
 			return;
 		}
 
-		if ( has_term( $tag, 'post_tag', $post_id ) ) {
+		if ( ! $overwrite && has_term( $tag, 'post_tag', $post_id ) ) {
 			return;
 		}
 
