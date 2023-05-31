@@ -87,3 +87,48 @@ if ( ! function_exists( 'multidots_location_get_option ' ) ) {
 		return $default;
 	}
 }
+
+function fpHandleUpload() {
+
+	if (!wp_verify_nonce($_POST['_wpnonce'], 'media-form')) {
+		return new WP_Error('grabfromurl', 'Could not verify request nonce');
+	}
+
+	// build up array like PHP file upload
+	$file = array();
+	$file['name'] = $_POST['grabfrom_saveas'];
+	$file['tmp_name'] = download_url($_POST['grabfrom_url']);
+
+	if (is_wp_error($file['tmp_name'])) {
+		@unlink($file['tmp_name']);
+		return new WP_Error('grabfromurl', 'Could not download image from remote source');
+	}
+
+	$attachmentId = media_handle_sideload($file, $_POST['post_id']);
+
+	// create the thumbnails
+	$attach_data = wp_generate_attachment_metadata( $attachmentId,  get_attached_file($attachmentId));
+
+	wp_update_attachment_metadata( $attachmentId,  $attach_data );
+
+	return $attachmentId;	
+}
+
+function fpGrabFromURLIframe() {
+	media_upload_header();
+
+	if (isset($_POST['grabfrom_url'])) {
+		// this is an upload request. let's see!
+		$attachmentId = fpHandleUpload();
+		if (is_wp_error($attachmentId)) {
+			fpUploadForm('<div class="error form-invalid">' . $attachmentId->get_error_message(). '</div>');
+		}
+		else {
+			echo "<style>h3, #plupload-upload-ui,.max-upload-size { display: none }</style>";
+			media_upload_type_form("image", null, $attachmentId);
+		}
+	}
+	else {
+		fpUploadForm();
+	}
+}

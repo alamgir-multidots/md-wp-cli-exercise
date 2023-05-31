@@ -166,45 +166,22 @@ class Wp_Custom_Cli extends Exercise {
 			return;
 		}
 
-		// Include image.php
-		require_once( ABSPATH . 'wp-admin/includes/image.php' );
+		// Build up array like PHP file upload
+		$file             = [];
+		$file['name']     = basename( $image_url );
+		$file['tmp_name'] = download_url( $image_url );
 
-		// Add Featured Image to Post
-		$image_name       = basename( $image_url );
-		$upload_dir       = wp_upload_dir();
-		$image_data       = file_get_contents( $image_url );
-		$unique_file_name = wp_unique_filename( $upload_dir['path'], $image_name );
-		$filename         = basename( $unique_file_name );
-
-		// Check folder permission and define file location
-		if ( wp_mkdir_p( $upload_dir['path'] ) ) {
-			$file = $upload_dir['path'] . '/' . $filename;
-		} else {
-			$file = $upload_dir['basedir'] . '/' . $filename;
+		if ( is_wp_error( $file['tmp_name'] ) ) {
+			@unlink( $file['tmp_name'] );
+			return;
 		}
 
-		// Create the image  file on the server
-		file_put_contents( $file, $image_data );
+		$attach_id = media_handle_sideload( $file, $post_id );
 
-		// Check image file type
-		$wp_filetype = wp_check_filetype( $filename, null );
+		// Create the thumbnails
+		$attach_data = wp_generate_attachment_metadata( $attach_id,  get_attached_file( $attach_id ) );
 
-		// Set attachment data
-		$attachment = [
-			'post_mime_type' => $wp_filetype['type'],
-			'post_title'     => sanitize_file_name( $filename ),
-			'post_content'   => '',
-			'post_status'    => 'inherit'
-		];
-
-		// Create the attachment
-		$attach_id = wp_insert_attachment( $attachment, $file, $post_id );
-
-		// Define attachment metadata
-		$attach_data = wp_generate_attachment_metadata( $attach_id, $file );
-
-		// Assign metadata to attachment
-		wp_update_attachment_metadata( $attach_id, $attach_data );
+		wp_update_attachment_metadata( $attach_id,  $attach_data );
 
 		// And finally assign featured image to post
 		set_post_thumbnail( $post_id, $attach_id );
